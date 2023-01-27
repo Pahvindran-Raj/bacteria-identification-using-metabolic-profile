@@ -78,39 +78,47 @@ with tab_2:
 
     discrete_input = np.zeros((1, 27), dtype=int)
     metabolites_input_arr = text_input.split(",")
+    error_found = False
     for metabolite in metabolites_input_arr:
         metabolite = metabolite.strip().lower()
         if metabolite == "bcaa": discrete_input[:, 0] = 1
-        if metabolite == "ethanol": discrete_input[:, 1] = 1
-        if metabolite == "threonine": discrete_input[:, 2] = 1
-        if metabolite == "alanine": discrete_input[:, 3] = 1
-        if metabolite == "lysine": discrete_input[:, 4] = 1
-        if metabolite == "acetate": discrete_input[:, 5] = 1
-        if metabolite == "methionine": discrete_input[:, 6] = 1
-        if metabolite == "pyruvate": discrete_input[:, 7] = 1
-        if metabolite == "succinate": discrete_input[:, 8] = 1
-        if metabolite == "tmao": discrete_input[:, 9] = 1
-        if metabolite == "gylcerophosphocholine": discrete_input[:, 10] = 1
-        if metabolite == "phenylacetate": discrete_input[:, 11] = 1
-        if metabolite == "glycine": discrete_input[:, 12] = 1
-        if metabolite == "valine": discrete_input[:, 13] = 1
-        if metabolite == "uracil": discrete_input[:, 14] = 1
-        if metabolite == "fumarate": discrete_input[:, 15] = 1
-        if metabolite == "tyrosine": discrete_input[:, 16] = 1
-        if metabolite == "xanthine": discrete_input[:, 17] = 1
-        if metabolite == "hypoxanthine": discrete_input[:, 18] = 1
-        if metabolite == "formate": discrete_input[:, 19] = 1
-        if metabolite == "butanoate": discrete_input[:, 20] = 1
-        if metabolite == "3-hydroxybutanoate": discrete_input[:, 21] = 1
-        if metabolite == "putrescine": discrete_input[:, 22] = 1
-        if metabolite == "acetone": discrete_input[:, 23] = 1
-        if metabolite == "creatine": discrete_input[:, 24] = 1
-        if metabolite == "methanol": discrete_input[:, 25] = 1
-        if metabolite == "phenylalanine": discrete_input[:, 26] = 1
+        elif metabolite == "ethanol": discrete_input[:, 1] = 1
+        elif metabolite == "threonine": discrete_input[:, 2] = 1
+        elif metabolite == "alanine": discrete_input[:, 3] = 1
+        elif metabolite == "lysine": discrete_input[:, 4] = 1
+        elif metabolite == "acetate": discrete_input[:, 5] = 1
+        elif metabolite == "methionine": discrete_input[:, 6] = 1
+        elif metabolite == "pyruvate": discrete_input[:, 7] = 1
+        elif metabolite == "succinate": discrete_input[:, 8] = 1
+        elif metabolite == "tmao": discrete_input[:, 9] = 1
+        elif metabolite == "gylcerophosphocholine": discrete_input[:, 10] = 1
+        elif metabolite == "phenylacetate": discrete_input[:, 11] = 1
+        elif metabolite == "glycine": discrete_input[:, 12] = 1
+        elif metabolite == "valine": discrete_input[:, 13] = 1
+        elif metabolite == "uracil": discrete_input[:, 14] = 1
+        elif metabolite == "fumarate": discrete_input[:, 15] = 1
+        elif metabolite == "tyrosine": discrete_input[:, 16] = 1
+        elif metabolite == "xanthine": discrete_input[:, 17] = 1
+        elif metabolite == "hypoxanthine": discrete_input[:, 18] = 1
+        elif metabolite == "formate": discrete_input[:, 19] = 1
+        elif metabolite == "butanoate": discrete_input[:, 20] = 1
+        elif metabolite == "3-hydroxybutanoate": discrete_input[:, 21] = 1
+        elif metabolite == "putrescine": discrete_input[:, 22] = 1
+        elif metabolite == "acetone": discrete_input[:, 23] = 1
+        elif metabolite == "creatine": discrete_input[:, 24] = 1
+        elif metabolite == "methanol": discrete_input[:, 25] = 1
+        elif metabolite == "phenylalanine": discrete_input[:, 26] = 1
+        else:
+            if not error_found:
+                st.error('The system could not detect the following metabolite(s):', icon="🚨")
+            error_found = True
+            st.error(metabolite)
 
     # load discrete model
     st.write('')
     if st.button('classify '):
+        if error_found:
+            st.warning('System will ignore the unidentified metabolites', icon="⚠️")
         filename = 'models/svm_model_discrete.sav'
         model = pickle.load(open(filename, 'rb'))
         pred = model.predict(discrete_input)
@@ -178,7 +186,7 @@ with tab1:
         ax.set_xlabel('Principal Component 1')
         ax.set_ylabel('Principal Component 2')
         ax.set_title('2 component PCA')
-        targets = pd.DataFrame(y).drop_duplicates().loc[:,0]
+        targets = pd.DataFrame(y).drop_duplicates().loc[:,0].values
         for target in targets:
             indicesToKeep = pc_df['Label'] == target
             ax.scatter(pc_df.loc[indicesToKeep, 'PC1'], pc_df.loc[indicesToKeep, 'PC2'])
@@ -338,12 +346,17 @@ if dataset is not None:
         st.write('')
         bacteria_inc_signal = pd.DataFrame(dataset.columns[1:]).transpose()
         bacteria_dec_signal = pd.DataFrame(dataset.columns[1:]).transpose()
+        columns_to_drop = []
         for column_index in range(p_val_inc_index.size):
             if p_val_inc_index[column_index] != column_index:
-                bacteria_inc_signal = bacteria_inc_signal.drop([bacteria_inc_signal.columns[column_index]], axis=1)
-        for column_index in range(p_val_dec_index.size):
-            if p_val_dec_index[column_index] != column_index:
-                bacteria_dec_signal = bacteria_dec_signal.drop([bacteria_dec_signal.columns[column_index]], axis=1)
+                columns_to_drop.append(bacteria_inc_signal.columns[column_index])
+        bacteria_inc_signal = bacteria_inc_signal.drop(columns_to_drop, axis=1)
+
+        columns_to_drop2 = []
+        for column_index2 in range(p_val_dec_index.size):
+            if p_val_dec_index[column_index2] != column_index2:
+                columns_to_drop2.append(bacteria_inc_signal.columns[column_index])
+        bacteria_dec_signal = bacteria_dec_signal.drop(columns_to_drop2, axis=1)
 
         # Download/display output
         output_incsignal_csv = convert_df(bacteria_inc_signal)
