@@ -139,7 +139,17 @@ st.dataframe(dataset_display)
 uploaded_file = st.file_uploader("Choose a file")
 dataset = None
 if uploaded_file is not None:
-    dataset = pd.read_csv(uploaded_file)
+    try:
+        dataset = pd.read_csv(uploaded_file)
+    except:
+        st.error('Invalid File Format', icon="🚨")
+    try:
+        if dataset is not None:
+            _ = dataset.loc[:, dataset.columns != 'Label'].values
+            _ = dataset.loc[:, ['Label']].values.flatten()
+    except:
+        dataset = None
+        st.error('Ensure the csv file has the "Label" column. Refer to the template.', icon="🚨")
 
 with st.expander('You may download and use the template of the NMR spectra dataset'):
     st.write('')
@@ -158,14 +168,18 @@ with st.expander('You may download and use the template of the NMR spectra datas
 # split dataset inputs into X and y
 def inputs_normal(dataset):
     X = dataset.loc[:, dataset.columns != 'Label'].values
+    X = np.nan_to_num(X)
     y = dataset.loc[:, ['Label']].values.flatten()
+    y = np.nan_to_num(y)
     return X, y
 
 # split dataset inputs into X and y (increasing signals)
 def inputs_incsignals(dataset):
     X = dataset.loc[:, dataset.columns != 'Label'].values
+    X = np.nan_to_num(X)
     X[X < 0] = 0
     y = dataset.loc[:, ['Label']].values.flatten()
+    y = np.nan_to_num(y)
     return X, y
 
 # Principal Component Analysis
